@@ -1,0 +1,25 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "responseHeaders": [
+        {
+          "header": "Content-Disposition",
+          "operation": "set",
+          "value": "inline"
+        }
+      ]
+    },
+    "condition": {
+      "urlFilter": "||sd.burgerkingrus.ru",
+      "resourceTypes": [
+        "main_frame",
+        "sub_frame",
+        "xmlhttprequest",
+        "other"
+      ]
+    }
+  }
+]

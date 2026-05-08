@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="container">
+        <div class="tabs">
+            <div class="tab active" data-tab="sd">Инциденты</div>
+            <div class="tab" data-tab="tracker">Трекер Грузов</div>
+        </div>
+        
+        <!-- Вкладка SD -->
+        <div id="sd" class="tab-content active">
+            <div class="input-group">
+                <label for="ticketInput">Номер инцидента</label>
+                <input type="text" id="ticketInput" placeholder="Введите номер..." autocomplete="off">
+            </div>
+            <button id="searchBtn">Перейти</button>
+        </div>
+
+        <!-- Вкладка Трекер -->
+        <div id="tracker" class="tab-content">
+            <div class="input-group">
+                <label for="companySelect">Выберите Транспортную Компанию</label>
+                <select id="companySelect">
+                    <option value="cdek">СДЭК</option>
+                    <option value="dellin">Деловые Линии</option>
+                    <option value="dpd">DPD</option>
+                    <option value="kce">КСЭ</option>
+                    <option value="pony">Pony Express</option>
+                    <option value="flippost">FLIPPOST</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label for="trackInput">Номер накладной / Трек-номер</label>
+                <input type="text" id="trackInput" placeholder="Например: 12345678" autocomplete="off">
+            </div>
+            <button id="trackBtn">Отследить</button>
+            <div class="footer-hint">Откроется в новой вкладке на сайте ТК</div>
+        </div>
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html>

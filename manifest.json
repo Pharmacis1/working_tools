@@ -1,0 +1,63 @@
+{
+  "manifest_version": 3,
+  "name": "Рабочие инструменты",
+  "version": "1.1",
+  "description": "Поиск заявок Service Desk и трекинг грузов",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Открыть инструменты",
+    "default_icon": {
+      "16": "icon.png",
+      "32": "icon.png",
+      "48": "icon.png",
+      "128": "icon.png"
+    }
+  },
+  "icons": {
+    "16": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
+  },
+  "permissions": [
+    "downloads",
+    "declarativeNetRequest",
+    "tabs"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "ruleset_1",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://sd.burgerkingrus.ru/*",
+        "*://*.burgerkingrus.ru/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "inject.js"
+      ],
+      "matches": [
+        "*://web.burgerkingrus.ru/*"
+      ]
+    }
+  ]
+}
