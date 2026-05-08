@@ -1,52 +1,52 @@
 (function() {
-    console.log("[BK Extension] Injector v6 (Ultra-Safe) loaded");
+    console.log("[BK Extension] Injector v7 loaded");
 
-    function findAndSendData(obj) {
-        if (!obj || typeof obj !== 'object') return;
-        
-        // Только верхний уровень, никакой рекурсии!
+    function findAndSendData(obj, visited, depth) {
+        if (!visited) visited = new WeakSet();
+        if (!depth) depth = 0;
+        if (!obj || typeof obj !== 'object' || depth > 3) return;
+        if (visited.has(obj)) return;
+        visited.add(obj);
+
         if (Array.isArray(obj.projects)) {
+            console.log("[BK Inject] Found projects:", obj.projects.length);
             window.postMessage({ type: 'BK_PROJECTS_DATA', projects: obj.projects }, '*');
         }
         if (Array.isArray(obj.devices)) {
+            console.log("[BK Inject] Found devices:", obj.devices.length);
             window.postMessage({ type: 'BK_DEVICES_DATA', devices: obj.devices }, '*');
         }
 
-        // Если данные вложены в "data" (частая практика)
-        if (obj.data && typeof obj.data === 'object') {
-            if (Array.isArray(obj.data.projects)) window.postMessage({ type: 'BK_PROJECTS_DATA', projects: obj.data.projects }, '*');
-            if (Array.isArray(obj.data.devices)) window.postMessage({ type: 'BK_DEVICES_DATA', devices: obj.data.devices }, '*');
+        for (var key in obj) {
+            try {
+                var val = obj[key];
+                if (val && typeof val === 'object' && key !== 'projects' && key !== 'devices') {
+                    findAndSendData(val, visited, depth + 1);
+                }
+            } catch(e) {}
         }
     }
 
-    // 1. JSON.parse
-    const originalParse = JSON.parse;
+    // 1. Перехват fetch() — самый надёжный способ
+    var originalFetch = window.fetch;
+    window.fetch = function() {
+        return originalFetch.apply(this, arguments).then(function(response) {
+            // Читаем из КЛОНА, оригинал не трогаем
+            try {
+                var clone = response.clone();
+                clone.json().then(function(data) {
+                    try { findAndSendData(data); } catch(e) {}
+                }).catch(function() {});
+            } catch(e) {}
+            return response;
+        });
+    };
+
+    // 2. Перехват JSON.parse (ловит данные из XHR и других источников)
+    var originalParse = JSON.parse;
     JSON.parse = function(text, reviver) {
-        const result = originalParse(text, reviver);
+        var result = originalParse(text, reviver);
         try { findAndSendData(result); } catch(e) {}
         return result;
-    };
-
-    // 2. Response.json()
-    const originalJson = Response.prototype.json;
-    Response.prototype.json = function() {
-        return originalJson.apply(this, arguments).then(data => {
-            try { findAndSendData(data); } catch(e) {}
-            return data;
-        });
-    };
-
-    // 3. XHR
-    const originalXhrSend = XMLHttpRequest.prototype.send;
-    XMLHttpRequest.prototype.send = function(...args) {
-        this.addEventListener('load', function() {
-            try {
-                if (this.responseType === '' || this.responseType === 'text') {
-                    const result = originalParse(this.responseText);
-                    findAndSendData(result);
-                }
-            } catch(e) {}
-        });
-        return originalXhrSend.apply(this, args);
     };
 })();

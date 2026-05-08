@@ -98,76 +98,125 @@ if (window.location.hostname === 'web.burgerkingrus.ru') {
         });
     }
 
-    // 4. Функция для вывода списка устройств
+    // 4. Функция для вывода списка устройств (иконка + всплывающее окно)
     function updateDevicesDisplay() {
         if (location.href !== lastUrl) {
             lastUrl = location.href;
             deviceNames = [];
-            const old = document.getElementById('bk-devices-list-wrapper');
-            if (old) old.remove();
+            const oldIcon = document.getElementById('bk-devices-icon');
+            if (oldIcon) oldIcon.remove();
+            const oldPopup = document.getElementById('bk-devices-popup');
+            if (oldPopup) oldPopup.remove();
         }
 
         if (!deviceNames || deviceNames.length === 0) return;
         if (!window.location.hash.includes('/campaigns2/')) return;
 
-        let anchor = null;
-        const allElements = document.querySelectorAll('div, span, b');
-        for (let el of allElements) {
-            if (el.textContent.trim() === 'Места') {
-                anchor = el;
+        // Ищем внутренний span с «Устройства:» (лист без детей)
+        let innerSpan = null;
+        const allEls = document.querySelectorAll('span, div, button');
+        for (let el of allEls) {
+            if (el.children.length === 0 && el.textContent.trim().startsWith('Устройства:')) {
+                innerSpan = el;
                 break;
             }
         }
-        if (!anchor) return;
+        if (!innerSpan) return;
 
-        const sectionRow = anchor.closest('div[class*="block_"]') || anchor.parentElement.parentElement;
-        const parentContainer = sectionRow.parentElement;
+        // Родитель — это сама кнопка целиком
+        const buttonEl = innerSpan.parentElement;
 
-        let listContainer = document.getElementById('bk-devices-list-wrapper');
-        if (!listContainer) {
-            listContainer = document.createElement('div');
-            listContainer.id = 'bk-devices-list-wrapper';
-            listContainer.style.cssText = `
-                display: block !important;
-                width: 100% !important;
-                flex: 1 0 100% !important;
-                margin: 15px 0 10px 0 !important;
-                padding: 12px 18px !important;
-                background: #fff9f0 !important;
-                border: 1px solid #ffd8a8 !important;
-                border-left: 5px solid #d35400 !important;
-                border-radius: 8px !important;
-                box-shadow: 0 3px 10px rgba(211, 84, 0, 0.08) !important;
-                box-sizing: border-box !important;
-                clear: both !important;
+        // Если иконка уже есть — ничего не делаем
+        if (document.getElementById('bk-devices-icon')) return;
+
+        // Создаём иконку-корону
+        const icon = document.createElement('span');
+        icon.id = 'bk-devices-icon';
+        icon.textContent = ' 👑';
+        icon.title = 'Показать список устройств';
+        icon.style.cssText = `
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 4px;
+            vertical-align: middle;
+            transition: transform 0.2s;
+        `;
+        icon.onmouseenter = () => icon.style.transform = 'scale(1.3)';
+        icon.onmouseleave = () => icon.style.transform = 'scale(1)';
+
+        // Вставляем в КОНЕЦ кнопки (после числа)
+        buttonEl.appendChild(icon);
+
+        // Создаём всплывающее окно (скрыто по умолчанию)
+        const popup = document.createElement('div');
+        popup.id = 'bk-devices-popup';
+        popup.style.cssText = `
+            display: none;
+            position: fixed;
+            z-index: 999999;
+            background: #fff;
+            border: 1px solid #ffd8a8;
+            border-left: 5px solid #d35400;
+            border-radius: 10px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+            padding: 16px 20px;
+            min-width: 280px;
+            max-width: 420px;
+            max-height: 300px;
+            overflow-y: auto;
+        `;
+
+        const popupHeader = document.createElement('div');
+        popupHeader.style.cssText = `
+            color: #d35400;
+            font-weight: 800;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #ffecd2;
+        `;
+        popupHeader.textContent = '📍 Подключенные устройства (' + deviceNames.length + ')';
+
+        const popupList = document.createElement('div');
+        popupList.style.cssText = `font-size: 13px; color: #333; line-height: 1.8;`;
+
+        deviceNames.forEach(name => {
+            const item = document.createElement('div');
+            item.textContent = name;
+            item.style.cssText = `
+                padding: 3px 8px;
+                border-radius: 4px;
+                margin-bottom: 2px;
+                background: #fef9f3;
             `;
+            popupList.appendChild(item);
+        });
 
-            const header = document.createElement('div');
-            header.innerHTML = '<span style="color: #d35400; font-weight: bold; font-size: 11px; text-transform: uppercase;">📍 Подключенные устройства:</span>';
-            header.style.marginBottom = '5px';
-            
-            const scrollArea = document.createElement('div');
-            scrollArea.id = 'bk-devices-scroll-area';
-            scrollArea.style.cssText = `
-                max-height: 80px;
-                overflow-y: auto;
-                font-size: 13px;
-                color: #444;
-                line-height: 1.4;
-                font-weight: 500;
-            `;
+        popup.appendChild(popupHeader);
+        popup.appendChild(popupList);
+        document.body.appendChild(popup);
 
-            listContainer.appendChild(header);
-            listContainer.appendChild(scrollArea);
-            sectionRow.parentNode.insertBefore(listContainer, sectionRow.nextSibling);
-            console.log("[BK Extension] Device list block created and inserted");
-        }
+        // Показать/скрыть по клику на иконку
+        icon.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (popup.style.display === 'none') {
+                const rect = icon.getBoundingClientRect();
+                popup.style.display = 'block';
+                popup.style.top = (rect.bottom + 8) + 'px';
+                popup.style.left = Math.min(rect.left, window.innerWidth - 440) + 'px';
+            } else {
+                popup.style.display = 'none';
+            }
+        });
 
-        // 4. Обновляем текст
-        const scrollArea = document.getElementById('bk-devices-scroll-area');
-        if (scrollArea) {
-            scrollArea.textContent = deviceNames.join(', ');
-        }
+        // Закрыть по клику вне окна
+        document.addEventListener('click', (e) => {
+            if (!popup.contains(e.target) && e.target !== icon) {
+                popup.style.display = 'none';
+            }
+        });
     }
 
     // 5. Следим за изменениями (проверяем часто)
