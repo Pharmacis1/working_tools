@@ -128,17 +128,18 @@ if (window.location.hostname === 'web.burgerkingrus.ru') {
             listContainer = document.createElement('div');
             listContainer.id = 'bk-devices-list-wrapper';
             listContainer.style.cssText = `
-                display: block;
-                width: 95%;
-                margin: 10px auto 15px auto;
-                padding: 10px 15px;
-                background: #fff9f0;
-                border: 1px solid #ffd8a8;
-                border-left: 5px solid #d35400;
-                border-radius: 6px;
-                box-shadow: 0 2px 8px rgba(211, 84, 0, 0.1);
-                box-sizing: border-box;
-                clear: both;
+                display: block !important;
+                width: 100% !important;
+                flex: 1 0 100% !important;
+                margin: 15px 0 10px 0 !important;
+                padding: 12px 18px !important;
+                background: #fff9f0 !important;
+                border: 1px solid #ffd8a8 !important;
+                border-left: 5px solid #d35400 !important;
+                border-radius: 8px !important;
+                box-shadow: 0 3px 10px rgba(211, 84, 0, 0.08) !important;
+                box-sizing: border-box !important;
+                clear: both !important;
             `;
 
             const header = document.createElement('div');
