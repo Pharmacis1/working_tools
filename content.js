@@ -404,26 +404,22 @@ if (isBKPortal || isTestMode) {
 
                 // Если значение уже установилось
                 if (input.value === targetValue) {
-                    console.log("[BK Extension] Value set successfully, triggering search once.");
-                    
-                    // Эмуляция нажатия Enter (все события)
-                    const events = ['keydown', 'keypress', 'keyup'];
-                    events.forEach(type => {
-                        input.dispatchEvent(new KeyboardEvent(type, {
-                            key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true
-                        }));
-                    });
-                    
-                    // Клик по иконке поиска (на всякий случай через паузу)
-                    setTimeout(() => {
-                        const searchBtn = input.closest('div')?.parentElement?.querySelector('span[title="Поиск"], .searchBtn_-668498284_ui');
-                        if (searchBtn) {
-                            searchBtn.click();
-                            console.log("[BK Extension] Search button clicked.");
+                    if (!input.dataset.bkTriggeredAt) {
+                        console.log("[BK Extension] Value set! Stage 1 trigger...");
+                        input.dataset.bkTriggeredAt = Date.now();
+                        triggerSearch(input);
+                    } else {
+                        const elapsed = Date.now() - parseInt(input.dataset.bkTriggeredAt);
+                        // Вторая попытка через 2 секунды (имитация "повторного перехода")
+                        if (elapsed > 2000 && !input.dataset.bkStage2) {
+                            console.log("[BK Extension] Stage 2 trigger (Double-check)...");
+                            input.dataset.bkStage2 = "true";
+                            triggerSearch(input);
                         }
-                    }, 50);
-
-                    clearInterval(interval);
+                    }
+                    
+                    // Не выходим сразу, следим еще 10 секунд, чтобы значение не сбросилось
+                    if (attempts > 30) clearInterval(interval);
                     return;
                 }
 
@@ -442,13 +438,6 @@ if (isBKPortal || isTestMode) {
                     input.select();
                     document.execCommand('insertText', false, targetValue);
                 } catch (e) {}
-                
-                // Нажимаем Enter
-                setTimeout(() => {
-                    input.dispatchEvent(new KeyboardEvent('keydown', {
-                        key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true
-                    }));
-                }, 100);
             }
             
             if (attempts > 40) {
@@ -456,6 +445,22 @@ if (isBKPortal || isTestMode) {
                 clearInterval(interval);
             }
         }, 500);
+
+        function triggerSearch(el) {
+            el.focus();
+            el.blur();
+            const events = ['keydown', 'keypress', 'keyup'];
+            events.forEach(type => {
+                el.dispatchEvent(new KeyboardEvent(type, {
+                    key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true, cancelable: true
+                }));
+            });
+            
+            setTimeout(() => {
+                const searchBtn = el.closest('div')?.parentElement?.querySelector('span[title="Поиск"], .searchBtn_-668498284_ui');
+                if (searchBtn) searchBtn.click();
+            }, 300);
+        }
     }
 
     // 6. Следим за изменениями (проверяем часто)
