@@ -1,5 +1,5 @@
 (function() {
-    console.log("[BK Extension] Injector v7 loaded");
+    console.log("[BK Extension] Injector v8 (Diagnostic Mode) loaded");
 
     function findAndSendData(obj, visited, depth) {
         if (!visited) visited = new WeakSet();
@@ -9,11 +9,9 @@
         visited.add(obj);
 
         if (Array.isArray(obj.projects)) {
-            console.log("[BK Inject] Found projects:", obj.projects.length);
             window.postMessage({ type: 'BK_PROJECTS_DATA', projects: obj.projects }, '*');
         }
         if (Array.isArray(obj.devices)) {
-            console.log("[BK Inject] Found devices:", obj.devices.length);
             window.postMessage({ type: 'BK_DEVICES_DATA', devices: obj.devices }, '*');
         }
 
@@ -27,22 +25,38 @@
         }
     }
 
-    // 1. Перехват fetch() — самый надёжный способ
+    // Перехват fetch()
     var originalFetch = window.fetch;
     window.fetch = function() {
+        var args = arguments;
+        var url = args[0];
+        var options = args[1] || {};
+        var method = (options.method || 'GET').toUpperCase();
+
+        // Если это запрос на сохранение (PATCH/PUT/POST) - логируем его Payload
+        if (['PATCH', 'PUT', 'POST'].includes(method)) {
+            console.log(`%c[BK API Debug] ${method} Request to: ${url}`, "color: #d35400; font-weight: bold;");
+            if (options.body) {
+                try {
+                    console.log("[BK API Payload]:", JSON.parse(options.body));
+                } catch(e) {
+                    console.log("[BK API Payload (Raw)]:", options.body);
+                }
+            }
+        }
+
         return originalFetch.apply(this, arguments).then(function(response) {
-            // Читаем из КЛОНА, оригинал не трогаем
             try {
                 var clone = response.clone();
                 clone.json().then(function(data) {
-                    try { findAndSendData(data); } catch(e) {}
+                    findAndSendData(data);
                 }).catch(function() {});
             } catch(e) {}
             return response;
         });
     };
 
-    // 2. Перехват JSON.parse (ловит данные из XHR и других источников)
+    // Перехват JSON.parse
     var originalParse = JSON.parse;
     JSON.parse = function(text, reviver) {
         var result = originalParse(text, reviver);
