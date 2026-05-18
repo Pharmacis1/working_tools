@@ -9,6 +9,7 @@
         <div class="tabs">
             <div class="tab active" data-tab="sd">Инциденты</div>
             <div class="tab" data-tab="tracker">Трекер Грузов</div>
+            <div class="tab" data-tab="assistant">Ассистент</div>
         </div>
         
         <!-- Вкладка SD -->
@@ -39,6 +40,38 @@
             </div>
             <button id="trackBtn">Отследить</button>
             <div class="footer-hint">Откроется в новой вкладке на сайте ТК</div>
+        </div>
+
+        <!-- Вкладка Ассистент -->
+        <div id="assistant" class="tab-content">
+            <div class="mode-switches" style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap;">
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; color: #4b5563;">
+                    <input type="radio" name="astMode" value="generate" checked>
+                    Генерация ID
+                </label>
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; color: #4b5563;">
+                    <input type="radio" name="astMode" value="links">
+                    Ссылки РК
+                </label>
+                <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; color: #4b5563;">
+                    <input type="radio" name="astMode" value="format">
+                    Номера ресторанов
+                </label>
+            </div>
+
+            <div class="input-group" id="astInputGroup" style="display: none; margin-bottom: 12px;">
+                <textarea id="astInput" rows="2" style="width: 100%; box-sizing: border-box; min-height: 60px;"></textarea>
+            </div>
+
+            <button id="astBtn">Сгенерировать ID шаблона</button>
+
+            <div class="output-group" id="assistantOutputGroup" style="display: none; margin-top: 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <label style="margin: 0;">Результат</label>
+                    <button id="btnCopyOutput" style="width: auto; padding: 4px 8px; font-size: 11px; background-color: #6b7280;">Копировать</button>
+                </div>
+                <div id="assistantOutput" style="font-size: 13px; background: #f9fafb; border: 1px solid #d1d5db; border-radius: 6px; padding: 10px; white-space: pre-wrap; word-break: break-all;"></div>
+            </div>
         </div>
     </div>
     <script src="popup.js"></script>

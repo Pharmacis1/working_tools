@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Тест расширения Burger King</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; background: #f4f7f9; color: #333; }
+        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); max-width: 800px; margin: auto; }
+        h1 { color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 15px; }
+        .row { display: flex; align-items: center; padding: 20px 0; border-bottom: 1px solid #f0f0f0; }
+        .label { width: 200px; font-weight: 600; color: #7f8c8d; }
+        .content { flex: 1; }
+        .button { background: #e8eaed; padding: 10px 20px; border-radius: 6px; cursor: pointer; border: 1px solid #dcdfe6; font-weight: 600; }
+        .button:hover { background: #dcdfe6; }
+        .download-link { color: #3498db; text-decoration: none; font-weight: 500; border-bottom: 1px dashed #3498db; }
+        
+        #test-results { margin-top: 30px; padding: 20px; border-radius: 8px; display: none; }
+        .pass { color: #27ae60; font-weight: bold; }
+        .fail { color: #e74c3c; font-weight: bold; }
+        .test-item { margin-bottom: 10px; display: flex; justify-content: space-between; padding: 8px; background: #f8f9fa; border-radius: 4px; }
+        
+        .btn-run { background: #27ae60; color: white; border: none; padding: 12px 25px; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; transition: background 0.3s; }
+        .btn-run:hover { background: #219150; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1>🧪 Тестирование функций плагина</h1>
+    <p>Эта страница имитирует портал Burger King для проверки работы расширения.</p>
+    
+    <!-- Сценарий 1: Фото -->
+    <div class="row">
+        <div class="label">1. Фото в заявке:</div>
+        <div class="content">
+            <a href="photo.jpg" download="campaign_photo.jpg" id="test-photo" class="download-link">Скачать фото (клик должен открыть в новой вкладке)</a>
+        </div>
+    </div>
+
+    <!-- Сценарий 2: Шаблоны -->
+    <div class="row">
+        <div class="label">2. Шаблон:</div>
+        <div class="content" id="template-container">
+            <div class="firstLine_mock">
+                <span id="test-template" class="template-name">Аналитика</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Сценарий 3: Устройства -->
+    <div style="text-align: center; margin-top: 40px;">
+        <button class="btn-run" onclick="runTests()">Запустить авто-проверку</button>
+    </div>
+
+    <!-- Сценарий 4: Service Desk (HEAT) -->
+    <div class="row" style="margin-top: 40px; border-top: 3px solid #d35400; padding-top: 30px;">
+        <div class="label">4. SD (Ivanti HEAT):</div>
+        <div class="content">
+            <h2 style="color: #d35400;">Заявка № 2352433</h2>
+            <div id="sd-text-block" style="padding: 10px; background: #fffbe6; border: 1px solid #ffe58f; margin-bottom: 15px;">
+                Создано: 0202-МО дер. Медвежьи Озера ш Щелковское 07.05.2026 10:09
+            </div>
+            
+            <div class="field-item" style="margin-bottom: 10px;">
+                <label>Инициатор:</label><br>
+                <input type="text" id="sd-input-test" value="0995-ЧУВ Чебоксары ул Калинина" style="width: 300px;">
+            </div>
+
+            <div class="field-item">
+                <label>Описание:</label><br>
+                <textarea id="sd-textarea-test" style="width: 300px; height: 60px;">Ресторан 0167-МСК ш Варшавское требует замены панели.</textarea>
+            </div>
+        </div>
+    </div>
+
+    <!-- Сценарий 5: Кампании (РК) -->
+    <div class="row" style="margin-top: 40px; border-top: 3px solid #1890ff; padding-top: 30px;">
+        <div class="label">5. Рекламные кампании:</div>
+        <div class="content">
+            <h2 style="color: #1890ff;">Редактор кампании</h2>
+            
+            <!-- Панель настроек (куда вставится суффикс) -->
+            <div class="settings_U7Tv" style="padding: 10px; background: #f0f2f5; border: 1px solid #ccc; margin-bottom: 20px; display: flex; justify-content: space-between;">
+                <span>Зона медиа</span>
+                <div class="btns_eTuf">
+                     <button class="button_itmx">Правила</button>
+                </div>
+            </div>
+
+            <!-- Сцены -->
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <div class="top select_XMMv screenSelect_Ps32" id="scene-1-card" style="border: 2px solid #1890ff; padding: 10px; cursor: pointer;" onclick="selectScene(1)">
+                    <span class="text_RLUu text">Сцена 1</span>
+                </div>
+                <div class="top" id="scene-2-card" style="border: 1px solid #ccc; padding: 10px; cursor: pointer;" onclick="selectScene(2)">
+                    <span class="text_RLUu text">Сцена 2</span>
+                </div>
+            </div>
+
+            <button class="btn-run" style="background: #1890ff;" onclick="openMockModal()">+ Добавить контент</button>
+
+            <!-- Модальное окно (скрытое) -->
+            <div id="mock-modal" class="searchWrapper_Y8fp" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; border: 2px solid #333; padding: 30px; z-index: 1000; box-shadow: 0 0 100px rgba(0,0,0,0.5);">
+                <h3>Выберите контент</h3>
+                <div class="wrapper_-1538663543_ui">
+                    <input class="input-text_1428915500_ui" placeholder="Поиск..." style="width: 100%; padding: 10px;">
+                </div>
+                <br>
+                <button onclick="closeMockModal()">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="test-results">
+        <h3>Результаты:</h3>
+        <div id="results-list"></div>
+    </div>
+</div>
+
+<script>
+    // Имитируем данные от API
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            window.postMessage({
+                type: 'BK_PROJECTS_DATA',
+                projects: [{ name: 'Аналитика', id: '12345' }]
+            }, '*');
+
+            window.postMessage({
+                type: 'BK_DEVICES_DATA',
+                devices: [{name:'Устр 1'}, {name:'Устр 2'}, {name:'Устр 3'}, {name:'Устр 4'}]
+            }, '*');
+        }, 1000);
+    });
+
+    function runTests() {
+        const results = document.getElementById('test-results');
+        const list = document.getElementById('results-list');
+        results.style.display = 'block';
+        list.innerHTML = '';
+
+        function addResult(name, passed, msg) {
+            const div = document.createElement('div');
+            div.className = 'test-item';
+            div.innerHTML = `<span>${name}</span> <span class="${passed ? 'pass' : 'fail'}">${passed ? '✅ ПРОЙДЕНО' : '❌ ОШИБКА'}</span>`;
+            if (!passed) console.error(msg);
+            list.appendChild(div);
+        }
+
+        // Тест 1: Фото
+        const photoLink = document.getElementById('test-photo');
+        const photoOk = !photoLink.hasAttribute('download') && photoLink.getAttribute('target') === '_blank';
+        addResult("Открытие фото в новой вкладке", photoOk, "Атрибут download не удален или target blank не установлен");
+
+        // Тест 2: Шаблон
+        const templateSpan = document.getElementById('test-template');
+        const templateOk = templateSpan.parentElement.tagName === 'A' && templateSpan.parentElement.href.includes('/projects/12345');
+        addResult("Ссылка на проект в шаблоне", templateOk, "Шаблон не обернут в ссылку на проект");
+
+        // Тест 3: Корона
+        const crown = document.getElementById('bk-devices-icon');
+        const crownOk = !!crown && crown.textContent.includes('👑');
+        addResult("Появление короны 👑", crownOk, "Иконка короны не найдена в кнопке");
+
+        // Тест 4: SD Ссылки в тексте
+        const textBlock = document.getElementById('sd-text-block');
+        const textLinkOk = !!textBlock.querySelector('a[href*="sd_rest=0202"]');
+        addResult("Ссылка в тексте SD (0202)", textLinkOk, "Номер ресторана в тексте не превратился в ссылку");
+
+        // Тест 5: SD Кнопка у инпута
+        const inputField = document.getElementById('sd-input-test');
+        const inputBadgeOk = !!inputField.parentElement.querySelector('a[title*="0995"]');
+        addResult("Кнопка 'Устройства' у поля ввода (0995)", inputBadgeOk, "Кнопка не появилась рядом с инпутом");
+
+        addResult("Кнопка 'Устройства' у текстареа (0167)", areaBadgeOk, "Кнопка не появилась рядом с textarea");
+
+        // Тест 7: РК Поле суффикса
+        const suffixUI = document.getElementById('bk-search-suffix-wrapper');
+        addResult("Поле суффикса в РК", !!suffixUI, "Интерфейс суффикса не вставлен в панель кнопок");
+
+        // Тест 8: РК Автоподстановка
+        const mockInput = document.querySelector('.searchWrapper_Y8fp .input-text_1428915500_ui');
+        const suffixVal = document.getElementById('bk-search-suffix-input')?.value || '';
+        const rkOk = mockInput.value.includes("Сцена") && mockInput.value.includes(suffixVal);
+        addResult("Автозаполнение поиска в РК", rkOk, "Поиск не заполнился автоматически при открытии модалки");
+
+        if (photoOk && templateOk && crownOk && textLinkOk && inputBadgeOk && areaBadgeOk && !!suffixUI && rkOk) {
+            results.style.background = '#eafaf1';
+            results.style.border = '1px solid #27ae60';
+        } else {
+            results.style.background = '#fdedec';
+            results.style.border = '1px solid #e74c3c';
+        }
+    function openMockModal() {
+        document.getElementById('mock-modal').style.display = 'block';
+    }
+    function closeMockModal() {
+        document.getElementById('mock-modal').style.display = 'none';
+        // Очищаем инпут для повторного теста
+        const input = document.querySelector('.searchWrapper_Y8fp .input-text_1428915500_ui');
+        if (input) {
+            input.value = "";
+            delete input.dataset.bkLastQuery;
+        }
+    }
+    function selectScene(num) {
+        document.getElementById('scene-1-card').className = num === 1 ? 'top select_XMMv screenSelect_Ps32' : 'top';
+        document.getElementById('scene-1-card').style.border = num === 1 ? '2px solid #1890ff' : '1px solid #ccc';
+        document.getElementById('scene-2-card').className = num === 2 ? 'top select_XMMv screenSelect_Ps32' : 'top';
+        document.getElementById('scene-2-card').style.border = num === 2 ? '2px solid #1890ff' : '1px solid #ccc';
+    }
+</script>
+
+</body>
+</html>

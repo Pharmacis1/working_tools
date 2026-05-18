@@ -166,10 +166,14 @@ if (isBKPortal || isTestMode) {
     let deviceNames = [];
     let lastUrl = location.href;
 
-    try {
-        const cached = sessionStorage.getItem('bk_project_map');
-        if (cached) projectMap = JSON.parse(cached);
-    } catch(e) {}
+    // Загружаем сохраненную карту проектов из локального хранилища (чтобы работало в новых вкладках)
+    chrome.storage.local.get('bk_project_map', (data) => {
+        if (data.bk_project_map) {
+            // Мержим с тем, что могло уже прийти через сообщения за время инициализации
+            projectMap = { ...data.bk_project_map, ...projectMap };
+            console.log("[BK Extension] Project map loaded and merged from storage:", Object.keys(projectMap).length, "items");
+        }
+    });
 
     console.log("[BK Extension] Content script started.");
 
@@ -195,7 +199,7 @@ if (isBKPortal || isTestMode) {
                 }
             });
             if (added > 0) {
-                sessionStorage.setItem('bk_project_map', JSON.stringify(projectMap));
+                chrome.storage.local.set({ 'bk_project_map': projectMap });
             }
             updateTemplateLinks();
         }
@@ -217,7 +221,8 @@ if (isBKPortal || isTestMode) {
 
     // 3. Функция поиска и замены для шаблонов
     function updateTemplateLinks() {
-        if (!isTestMode && !window.location.hash.includes('/campaigns2/')) return;
+        const hash = window.location.hash;
+        if (!isTestMode && !hash.includes('/campaigns/') && !hash.includes('/campaigns2/')) return;
 
         const spans = document.querySelectorAll('div[class*="firstLine_"] span, div[class*="wrapper_"] span');
         spans.forEach(span => {
@@ -251,7 +256,9 @@ if (isBKPortal || isTestMode) {
         }
 
         if (!deviceNames || deviceNames.length === 0) return;
-        if (!isTestMode && !window.location.hash.includes('/campaigns2/')) return;
+        
+        const hash = window.location.hash;
+        if (!isTestMode && !hash.includes('/campaigns/') && !hash.includes('/campaigns2/')) return;
 
         // Ищем внутренний span с «Устройства:» (лист без детей)
         let innerSpan = null;
@@ -360,6 +367,137 @@ if (isBKPortal || isTestMode) {
         });
     }
 
+    // --- ФУНКЦИИ ДЛЯ РАБОТЫ С КАМПАНИЯМИ (РК) ---
+
+    // 5. Добавление поля для суффикса и переключателя в "Зону медиа"
+    async function updateCampaignSuffixUI() {
+        let settingsBar = document.querySelector('.settings_U7Tv .btns_eTuf');
+        
+        // Если не нашли по точному классу (например, в многозонных РК), ищем по содержимому
+        if (!settingsBar) {
+            const allBtnGroups = document.querySelectorAll('[class*="btns_"]');
+            for (const group of allBtnGroups) {
+                const text = group.textContent.toUpperCase();
+                if (text.includes('ПРАВИЛА') || text.includes('НАСТРОЙКИ')) {
+                    settingsBar = group;
+                    break;
+                }
+            }
+        }
+
+        if (!settingsBar || document.getElementById('bk-search-suffix-wrapper')) return;
+
+        // Загружаем настройки
+        const data = await chrome.storage.local.get(['bk_search_suffix', 'bk_search_enabled']);
+        const isEnabled = data.bk_search_enabled !== false; // По умолчанию включено
+
+        const wrapper = document.createElement('div');
+        wrapper.id = 'bk-search-suffix-wrapper';
+        wrapper.style.cssText = `
+            display: flex;
+            align-items: center;
+            margin-right: 10px;
+            background: #f0f2f5;
+            border-radius: 4px;
+            padding: 2px 8px;
+            border: 1px solid #dcdfe6;
+            gap: 5px;
+        `;
+
+        // Чекбокс ВКЛ/ВЫКЛ
+        const toggle = document.createElement('input');
+        toggle.type = 'checkbox';
+        toggle.checked = isEnabled;
+        toggle.title = 'Включить автоподстановку в поиск';
+        toggle.style.cssText = 'cursor: pointer; margin: 0;';
+        toggle.onchange = (e) => {
+            chrome.storage.local.set({ 'bk_search_enabled': e.target.checked });
+        };
+
+        const label = document.createElement('span');
+        label.textContent = 'Суффикс:';
+        label.style.cssText = 'font-size: 11px; color: #606266; font-weight: bold; margin-left: 2px;';
+
+        const input = document.createElement('input');
+        input.id = 'bk-search-suffix-input';
+        input.placeholder = 'напр. 13.05';
+        input.value = data.bk_search_suffix || '';
+
+        input.style.cssText = `
+            border: none;
+            background: transparent;
+            font-size: 11px;
+            width: 70px;
+            outline: none;
+            color: #333;
+        `;
+
+        input.oninput = (e) => {
+            chrome.storage.local.set({ 'bk_search_suffix': e.target.value });
+        };
+
+        wrapper.appendChild(toggle);
+        wrapper.appendChild(label);
+        wrapper.appendChild(input);
+        settingsBar.prepend(wrapper);
+    }
+
+    // 6. Автозаполнение поиска в модальном окне
+    async function handleCampaignModalSearch() {
+        const searchInput = document.querySelector('.searchWrapper_Y8fp .input-text_1428915500_ui');
+        if (!searchInput) return;
+
+        // Проверяем, включена ли функция
+        const config = await chrome.storage.local.get('bk_search_enabled');
+        if (config.bk_search_enabled === false) {
+            console.log("[BK Extension] Auto-search disabled in config.");
+            return;
+        }
+
+        // 1. Получаем имя активной сцены (пробуем разные селекторы)
+        let activeSceneEl = document.querySelector('.select_XMMv .text_RLUu.text') 
+                         || document.querySelector('.select_XMMv [class*="text_"]')
+                         || document.querySelector('[class*="select_"] [class*="text_"]');
+        
+        if (!activeSceneEl) {
+            console.log("[BK Extension] Active scene element NOT found.");
+            return;
+        }
+        const sceneName = activeSceneEl.textContent.trim();
+
+        // 2. Получаем суффикс
+        const data = await chrome.storage.local.get('bk_search_suffix');
+        const suffix = data.bk_search_suffix || '';
+
+        const fullSearchQuery = `${sceneName} ${suffix}`.trim();
+        
+        // Если этот запрос мы уже вставляли в ЭТОТ конкретный инпут - ничего не делаем
+        if (searchInput.dataset.bkLastQuery === fullSearchQuery) return;
+
+        console.log("[BK Extension] Auto-filling campaign search:", fullSearchQuery);
+        searchInput.dataset.bkLastQuery = fullSearchQuery;
+        
+        // Вставляем значение
+        try {
+            const nativeValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, "value").set;
+            nativeValueSetter.call(searchInput, fullSearchQuery);
+            searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+            searchInput.dispatchEvent(new Event('change', { bubbles: true }));
+        } catch (e) {
+            console.error("[BK Extension] Error setting search value:", e);
+        }
+
+        // Enter
+        setTimeout(() => {
+            console.log("[BK Extension] Triggering search click/enter...");
+            searchInput.dispatchEvent(new KeyboardEvent('keydown', {
+                key: 'Enter', code: 'Enter', keyCode: 13, which: 13, bubbles: true
+            }));
+            const icon = searchInput.parentElement.querySelector('.searchIcon_B5XL');
+            if (icon) icon.click();
+        }, 300);
+    }
+
     // 5. Авто-поиск по параметру sd_rest
     function handleAutoSearch() {
         if (!window.location.hash.includes('/devs')) return;
@@ -466,13 +604,19 @@ if (isBKPortal || isTestMode) {
     // 6. Следим за изменениями (проверяем часто)
     setInterval(() => {
         fixDownloadLinks();
-        if (window.location.hash.includes('/campaigns2/')) {
+        const hash = window.location.hash;
+        const isCampaignPage = hash.includes('/campaigns/') || hash.includes('/campaigns2/');
+
+        if (isCampaignPage) {
             updateTemplateLinks();
             updateDevicesDisplay();
+            updateCampaignSuffixUI();
+            handleCampaignModalSearch();
         }
-        if (window.location.hash.includes('/devs')) {
+        
+        if (hash.includes('/devs')) {
             // Проверяем наличие параметра в URL при смене хэша
-            if (window.location.hash.includes('sd_rest=')) {
+            if (hash.includes('sd_rest=')) {
                 handleAutoSearch();
             }
         }
